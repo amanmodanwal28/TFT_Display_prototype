@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <style>
+            
+            body{
+                background-color: rgb(39, 218, 188);
+            }
+            
+            table {
+                width: 70%;
+                background-color: rgb(234, 26, 237);
+                border-color: black;
+                border-collapse: collapse;
+                text-align: center;
+            }
+            td {
+                font-weight: 600;
+            }
+            
+            .small-frame {
+                border: 1px solid black;
+                padding: 10px;
+                background-color: rgb(234, 26, 237);
+                width: 30%; /* Adjust the width as needed */
+                margin-top: 20px; /* Adjust the top margin as needed */
+                text-align: center;
+                font-weight: 600;
+            }
+            .heading {
+                color: rgb(234, 227, 21);
+            }
+            
+            #current-date, #current-time{
+                color: black;
+            }
+
+            #Destination_stn,
+            #speed,
+            #distance,
+            #train_number,
+            #train_name,
+            .Next_stn,
+            #current-date,
+            #current-time,
+            #Present_stn {
+                color: white;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>PPS INTERNATIONAL</h1>
+        <table border="black">
+            <tbody>
+                <tr colspan="2">
+                    <td class="heading">Destination</td>
+                    <td colspan="2" id="Destination_stn">Mumbai</td>
+                </tr>
+                <tr>
+                    <td class="heading">Next</td>
+                    <td colspan="2"><span class="Next_stn">Pune</span></td>
+                </tr>
+                <tr>
+                    <td class="heading">Train Number</td>
+                    <td colspan="2"><span id="train_number">12009</span></td>
+                </tr>
+                <tr>
+                    <td class="heading">Train Name</td>
+                    <td colspan="2"><span id="train_name">Jan Shatabdi
+                            Express</span></td>
+                </tr>
+                <tr>
+                    <td class="heading">Speed : <span id="speed">50</span>
+                        Kmph</td>
+                    <td class="heading">Date : <span
+                            id="current-date"></span></td>
+                    <td class="heading">Time : <span
+                            id="current-time"></span></td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <div id="messages">
+                            <marquee behavior="scroll" direction="left">Welcome
+                                to
+                                Indian Railways .</marquee>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="small-frame">
+            <p>Next Halting Station <span class="Next_stn">Pune</span>
+                Junction</p>
+        </div>
+
+        <div class="small-frame">
+            <p>Present Station <span id="Present_stn">Jaunpur</span>
+                Junction</p>
+        </div>
+
+        <div id="messages"></div>
+
+        <video id="videoPlayer" autoplay muted
+            style="max-width: 300px; height: 200px;"></video>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+        <!-- <script src="https://cdn.socket.io/socket.io-4.3.2.min.js"></script> -->
+        <script>
+            
+            const socket = io();
+            const videoPlayer = document.getElementById('videoPlayer');
+            let mediaUrls = [];
+            let staticMessageInterval;
+            let marqueMessageInterval;
+            
+            
+            socket.on('mediaPreloaded', (cachedMediaUrls) => {
+                console.log('Received preloaded media URLs:', cachedMediaUrls);
+                mediaUrls = cachedMediaUrls;
+                if (mediaUrls.length > 0) {
+                    playNextVideo(); // Start playing the first video
+                } else {
+                    console.log('No media URLs found');
+                }
+            });
+
+            function playNextVideo() {
+                if (mediaUrls.length === 0) {
+                    // If all videos have been played, reload mediaUrls and play from the beginning
+                    socket.emit('preloadMedia');
+                    return;
+                }
+                const currentVideoUrl = mediaUrls.shift();
+                videoPlayer.src = currentVideoUrl;
+                
+            }
+
+            window.addEventListener('load', () => {
+                console.log('Page loaded');
+                const cachedMediaUrls = JSON.parse(localStorage.getItem('cachedMediaUrls'));
+                if (!cachedMediaUrls) {
+                    console.log('No cached media URLs found');
+                    socket.emit('preloadMedia');
+                } else {
+                    mediaUrls = cachedMediaUrls;
+                    if (mediaUrls.length > 0) {
+                        playNextVideo(); // Start playing the first video
+                    }
+                }
+            });
+
+            videoPlayer.addEventListener('ended', () => {
+                playNextVideo();
+            });
+            
+            // Function to update date and time
+
+
+            function updateTime() {
+                var now = new Date();
+                var date = now.toLocaleDateString();
+                var time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                document.getElementById("current-date").innerText = date;
+                document.getElementById("current-time").innerText = time;
+                
+            
+            }
+            
+            // Update time every minute
+
+            setInterval(updateTime, 60000);
+
+        // Initial call to display the time immediately
+        updateTime();
+        
+        document.getElementById("Destination_stn").innerText = "Mumbai Central";
+        // Update elements with class names
+        document.querySelectorAll(".Next_stn").forEach(function(element) {
+            element.innerText = "Banaras"; // Or any other value you want
+        });
+
+        document.getElementById("train_number").innerText = "12560";
+        document.getElementById("train_name").innerText = "Shiv Ganga Express";
+        document.getElementById("speed").innerText = "100";
+        document.getElementById("Present_stn").innerText = "Jaunpur";
+
+
+
+        const messagesDiv = document.getElementById('messages');
+
+
+        // Display marque message
+        function displayMarqueMessage(message) {
+            messagesDiv.innerHTML = ''; // Clear existing messages
+            const marqueMessageMarquee = document.createElement('marquee');
+            marqueMessageMarquee.setAttribute('behavior', 'scroll');
+            marqueMessageMarquee.setAttribute('direction', 'left');
+            marqueMessageMarquee.textContent = message;
+            messagesDiv.appendChild(marqueMessageMarquee);
+            console.log(marqueMessageMarquee)
+        }
+
+            // Socket event handler for receiving messages
+        socket.on('message', (data) => {
+            console.log(data)
+            displayMarqueMessage(data);
+
+        });
+    
+    
+
+        
+        
+    </script>
+
+    </body>
+</html>
